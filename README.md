@@ -43,6 +43,21 @@ Your design needs to meet the following **requirements**:
 7. Use appropriate types for different fields of data;
 8. Your design should better be as easy to expand as possible.
 
+
+用**PostgreSQL**设计一个数据库，管理压缩文件**data/task1.zip**中**course_info.json**和**select_course.csv**中提到的所有信息。注意，这两个文件中存在一些不合理的数据，请先纠正。表的总数，每个表的内容，所有的细节都应该由你自己决定。
+
+你的设计需要满足以下**要求**。
+
+1. 创建的表应该满足三种正常形式。
+2. 使用主键和外键来表示关于你的数据的重要属性和关系。每个表中的每一行都应该由其主键唯一识别。 
+3. 每个表都应该参与到一个链接中。No isolate tables included;(每个表要有外键或者有其他表的外键指向，也就是说不能有孤立表)
+4. 你的设计不应包含循环链接；(对于表之间的外键方向，不能有环)
+5. 每个表格中必须包含有至少一个非空的属性列，主键属于这个范畴，但是自增ID不属于）。
+6. 除了主键自增的ID之外，不允许有其他唯一列的表格；（除了主键自增的ID之外，需要有其他unique约束的列）
+7. 为不同的数据字段使用适当的类型。
+8. 你的设计最好尽可能地易于扩展。
+
+
 ### **Task 2: Import** **the** **data**
 
 Design programs/scripts to import data into your database from those two files ( **course_info.json** and **select_course.csv**).
@@ -52,6 +67,14 @@ Your design needs to meet the following **requirements**:
 1. Find ways to improve the efficiency of time-consuming during your importing process, and compare different importing methods.
 2. Make sure all data are imported accurately, highly effectively, and automatically.
 
+
+设计程序/脚本，将数据从这两个文件（**course_info.json**和**select_course.csv**）导入你的数据库。
+
+你的设计需要满足以下**要求**。
+
+1. 在你的导入过程中找到提高耗时效率的方法，并比较不同的导入方法。
+2. 确保所有数据都能准确、高效、自动地导入。
+
 ### **Task 3: Use DML to analyze your database in Task1**
 
 Design some experiments to show your database's performance, and record the execution time. Significant expressions, such as diagrams, the comparison will be welcome.
@@ -60,6 +83,15 @@ Your design needs to meet the following **requirements**:
 
 1. The experiments should contain but are not limited to these manipulations: SELECT、DELETE、UPDATE、INSERT.
 2. The experiments should be designed reasonably and comprehensively.
+
+
+设计一些实验来显示你的数据库的性能，并记录执行时间。重要的表达方式，如图表，对比将被欢迎。
+
+你的设计需要满足以下**要求**。
+
+1. 实验应包含但不限于这些操作。选择、删除、更新、插入。
+2. 实验的设计应该是合理的、全面的。
+
 
 ### **Task** **4: Compare database and file**
 
@@ -71,9 +103,21 @@ Your design needs to meet the following **requirements**:
 2. The experiments should be reasonable and comparable.
 3. A reasonable analysis of the results from your experiments should be given.
 
+
+设计程序/脚本来进行数据库和文件之间的比较。并设计一些实验来讨论它们的优点和缺点。欢迎用重要的表达方式，如图表，进行比较。
+
+你的设计需要满足以下**要求**。
+
+1. 如果你愿意，程序/脚本可以是任何编码语言。
+2. 实验应该是合理的和可比较的。
+3. 对你的实验结果应给出合理的分析。
+
 ### Task 5: Modify your database tables to fit the required implementation codes
 
 You will notice the database you designed in task 1 can not perfectly match what you need to do in the Service part in our provided codes. But you only need to modify some columns to match your needs in the Service part. So in this task, you need to modify your database tables to fit all interfaces you need to implement. We now upload the basic data for your test in **Task 6**, all of them are json files in the data folder. We just simply show the data tree directory here, the task1 folder can be ignored in this task. The files are not difficult to read, you can base on such files to modify your tables. By looking at the data, you can first see the requirements that follow.
+
+你会注意到你在任务1中设计的数据库不能完全匹配你在我们提供的代码中的服务部分所需要做的。但你只需要修改一些列以符合你在服务部分的需要。所以在这个任务中，你需要修改你的数据库表以适应你需要实现的所有接口。我们现在在**任务6**中为你的测试上传基本数据，所有这些都是数据文件夹中的json文件。我们只是简单地在这里展示了数据树目录，task1文件夹在这个任务中可以忽略。这些文件并不难读，你可以基于这样的文件来修改你的表格。通过查看数据，你可以首先看到下面的要求。
+
 
 ```
 │  coursePrerequisites.json
@@ -139,6 +183,18 @@ You will notice the database you designed in task 1 can not perfectly match what
 6. After finishing all your codes in the Service interface, you had better test your program based on the **ProjectJudge.java** we give to you.
 7. We prepare a simple implementation of a method, you can refer it to implement other methods.
 
+
+**你的这项工作主要分为以下部分：**
+
+1. 实现服务接口以通过基本测试案例。你需要**实现服务文件夹中的所有方法**。不要担心工作量，你真正要注意的是**CourseService.java**和**StudentService.java**。对于其他方法，只要简单的sql脚本就可以了。
+2. 根据你设计的数据库来操作你的数据表。
+3. 对你的实现进行剖析，并找到加速实现的方法。 
+4. （可选）寻找其他方法来实现与我们的接口类似的功能，并比较（其中一些），它们是否更好，更差，或者有不同的用例。
+5. 确保你的代码结果将是**正确的（最重要的）**和**有效的**。
+6. 在完成服务界面的所有代码后，你最好根据我们给你的**ProjectJudge.java**测试你的程序。
+7. 我们准备了一个方法的简单实现，你可以参考它来实现其他方法。
+
+
 ### **Bonus**
 
 1. High concurrency and transaction management.
@@ -147,6 +203,12 @@ You will notice the database you designed in task 1 can not perfectly match what
 4. Compare the performance of multiple databases with the file system over different operating systems.
 5. Some other effective explorations to improve the efficiency of a database system.
 
+
+1. 高并发性和事务管理。
+2. 用户权限管理。
+3. 数据库索引和文件IO。
+4. 比较多个数据库与文件系统在不同操作系统上的性能。
+5. 其他一些有效的探索，以提高数据库系统的效率。
 
 
 ## **Report Structure**
@@ -171,9 +233,16 @@ Introduce how to design the programs/scripts for importing the data in **Task 1*
 
 Introduce how to improve the efficiency of importing the data and give the core codes. You can design some experiments to improve the efficiency of your work. Make sure that the experiments should be reasonable, and the improvements should be obvious. Also, you may need to prepare to show your scripts and how it works in the presentation. Prepare some queries in advance!
 
+介绍如何设计**任务1**中导入数据的程序/脚本，并给出脚本的核心代码。
+
+介绍如何提高导入数据的效率，并给出核心代码。你可以设计一些实验来提高工作的效率。请注意，实验要合理，改进要明显。另外，你可能需要准备在演讲中展示你的脚本和它是如何工作的。提前准备好一些查询!
+
 ### Part 4. Task 3 and Task 4
 
 Show the performance analysis of your database designed in **Task 1**. You need to prepare some DMLs to provide the comparison between the database and the file system using programs/scripts. Analyze the results of your experiments designed.
+
+展示你在**任务1**中设计的数据库的性能分析。你需要准备一些DMLs来提供数据库和文件系统之间的比较，使用程序/脚本。分析你所设计的实验结果。
+
 
 ### Part 5. Bonus
 
