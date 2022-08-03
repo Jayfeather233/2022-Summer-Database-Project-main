@@ -16,6 +16,7 @@ public class executeSQL {
             for(int i=0;i<O.length;i++) ps.setObject(i+1,O[i]);
             ps.execute();
             ps.close();
+            conn.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -31,6 +32,7 @@ public class executeSQL {
             int u = resultSet.getInt(1);
             resultSet.close();
             ps.close();
+            conn.close();
             return u;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -46,6 +48,7 @@ public class executeSQL {
             boolean flg = rs.next();
             rs.close();
             ps.close();
+            conn.close();
             return flg;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -93,6 +96,7 @@ public class executeSQL {
             }
             rs.close();
             ps.close();
+            conn.close();
             return L;
         } catch (SQLException | ClassNotFoundException | InstantiationException | IllegalAccessException |
                  InvocationTargetException | NoSuchMethodException | NoSuchFieldException e) {

@@ -18,7 +18,8 @@ public interface StudentService {
     /**
      * The priority of EnrollResult should be (if not SUCCESS):
      *
-     * COURSE_NOT_FOUND > ALREADY_ENROLLED > ALREADY_PASSED > PREREQUISITES_NOT_FULFILLED > COURSE_CONFLICT_FOUND > COURSE_IS_FULL > UNKNOWN_ERROR
+     * COURSE_NOT_FOUND > ALREADY_ENROLLED > ALREADY_PASSED > PREREQUISITES_NOT_FULFILLED >
+     * COURSE_CONFLICT_FOUND > COURSE_IS_FULL > UNKNOWN_ERROR
      */
     enum EnrollResult {
         /**

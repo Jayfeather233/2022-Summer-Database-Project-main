@@ -31,7 +31,27 @@ public class S_DepartmentService implements DepartmentService {
         executeSQL.update("delete from enroll where studentid in " +
                                     "(select id from student where majorid in " +
                                         "(select id from major where deptid = ?))", departmentId);
-        executeSQL.update("delete from student where majorid in (select id from major where deptid = ?))", departmentId);
+
+        List<Integer> Li = new ArrayList<>();
+        try {
+            Connection conn = SQLDataSource.getInstance().getSQLConnection();
+            PreparedStatement ps = conn.prepareStatement("select id from student where majorid in (select id from major where deptid = ?)");
+            ps.setInt(1,departmentId);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                Li.add(rs.getInt(1));
+            }
+            rs.close();
+            ps.close();
+            conn.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        executeSQL.update("delete from student where majorid in (select id from major where deptid = ?)", departmentId);
+        for(int i : Li){
+            executeSQL.update("delete from usert where id = ?",i);
+        }
+
         executeSQL.update("delete from major where deptid = ?",departmentId);
         executeSQL.update("delete from department where id = ?", departmentId);
     }
@@ -52,6 +72,7 @@ public class S_DepartmentService implements DepartmentService {
             }
             resultSet.close();
             ps.close();
+            conn.close();
             return L;
         } catch (SQLException e) {
             e.printStackTrace();

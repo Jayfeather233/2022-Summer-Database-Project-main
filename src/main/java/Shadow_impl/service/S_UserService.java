@@ -46,6 +46,7 @@ public class S_UserService implements UserService {
             }
             resultSet.close();
             ps.close();
+            conn.close();
             return L;
         } catch (SQLException e) {
             e.printStackTrace();

@@ -48,6 +48,7 @@ public class S_SemesterService implements SemesterService {
             }
             resultSet.close();
             ps.close();
+            conn.close();
             return L;
         } catch (SQLException e) {
             e.printStackTrace();
