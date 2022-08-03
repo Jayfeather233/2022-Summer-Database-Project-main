@@ -26,40 +26,22 @@ public class S_CourseService implements CourseService {
 
     @Override
     public int addCourseSection(String courseId, int semesterId, String sectionName, int totalCapacity) {
-        try {
-            Connection conn = SQLDataSource.getInstance().getSQLConnection();
-            PreparedStatement ps = conn.prepareStatement("select id from course where id = ?");
-            ps.setString(1, courseId);
-            ResultSet rs = ps.executeQuery();
-            if(!rs.next()) throw new IntegrityViolationException();
-            ps.close();
-            rs.close();
+        if(!executeSQL.ifExist("select id from course where id = ?",courseId)) throw new IntegrityViolationException();
+        if(!executeSQL.ifExist("select id from semester where id = ?",semesterId)) throw new IntegrityViolationException();
 
-            ps = conn.prepareStatement("select id from semester where id = ?");
-            ps.setInt(1, semesterId);
-            rs = ps.executeQuery();
-            if(!rs.next()) throw new IntegrityViolationException();
-            ps.close();
-            rs.close();
-
-            executeSQL.update("insert into section(courseid, semesterid, sectionname, fullcapacity, leftcapacity)",
-                    courseId, semesterId, sectionName, totalCapacity,totalCapacity);
-            ps = conn.prepareStatement("select currval('section_seq')");
-            rs = ps.executeQuery();
-            rs.next();
-            int re = rs.getInt(1);
-            rs.close();
-            ps.close();
-            return re;
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        executeSQL.update("insert into section(courseid, semesterid, sectionname, fullcapacity, leftcapacity)",
+                                                    courseId, semesterId, sectionName, totalCapacity,totalCapacity);
+        return executeSQL.getSeq("section_seq");
     }
 
     @Override
     public int addCourseSectionClass(int sectionId, int instructorId, DayOfWeek dayOfWeek, Set<Short> weekList, short classStart, short classEnd, String location) {
-        return 0;
+        if(!executeSQL.ifExist("select id from section where id = ?",sectionId)) throw new IntegrityViolationException();
+
+        executeSQL.update("insert into class(sectionid, instructorid, dayofweek, weeklist, classstart, classend, location)",
+                                sectionId, instructorId, (short)dayOfWeek.getValue(), weekList, classStart, classEnd,location);
+
+        return executeSQL.getSeq("class_seq");
     }
 
     @Override

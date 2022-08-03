@@ -21,6 +21,44 @@ public class executeSQL {
         }
     }
 
+    public static int getSeq(String seq){
+        try {
+            Connection conn = SQLDataSource.getInstance().getSQLConnection();
+            PreparedStatement ps = conn.prepareStatement("select currval(?)");
+            ps.setString(1,seq);
+            ResultSet resultSet = ps.executeQuery();
+            resultSet.next();
+            int u = resultSet.getInt(1);
+            resultSet.close();
+            ps.close();
+            return u;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static boolean ifExist(String sql, Object...O){
+        try {
+            Connection conn = SQLDataSource.getInstance().getSQLConnection();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            for(int i=0;i<O.length;i++) ps.setObject(i+1,O[i]);
+            ResultSet rs = ps.executeQuery();
+            boolean flg = rs.next();
+            rs.close();
+            ps.close();
+            return flg;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     *  abandoned
+     * @param sql sql query statement
+     * @param className result class name
+     * @param O parameters
+     * @return A List<className> the resultSet of query
+     */
     public static List<Object> query(String sql, String className, Object...O){
         try {
             Connection conn = SQLDataSource.getInstance().getSQLConnection();

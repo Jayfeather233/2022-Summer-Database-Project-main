@@ -16,53 +16,18 @@ public class S_SemesterService implements SemesterService {
     @Override
     public int addSemester(String name, Date begin, Date end) {
         if(begin.after(end)) throw new IntegrityViolationException();
-        try {
-            Connection conn = SQLDataSource.getInstance().getSQLConnection();
-            PreparedStatement ps = conn.prepareStatement("select name from semester where name = ?");
-            ps.setString(1,name);
-            ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                throw new IntegrityViolationException();
-            } else {
-                ps.close();
-                rs.close();
+        //if(executeSQL.ifExist("select name from semester where name = ?", name)) throw new IntegrityViolationException();
 
-                executeSQL.update("insert into semester(name, begint, endt) values(?,?,?)",name,begin,end);
-                ps = conn.prepareStatement("select currval('semester_seq')");
-                rs = ps.executeQuery();
-                rs.next();
-                int re = rs.getInt(1);
-                rs.close();
-                ps.close();
-                return re;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        executeSQL.update("insert into semester(name, begint, endt) values(?,?,?)",name,begin,end);
+        return executeSQL.getSeq("semester_seq");
     }
 
     @Override
     public void removeSemester(int semesterId) {
-        try {
-            Connection conn = SQLDataSource.getInstance().getSQLConnection();
-            PreparedStatement ps = conn.prepareStatement("select id from section where semesterid = ?");
-            ps.setInt(1,semesterId);
-            ResultSet rs = ps.executeQuery();
-            ArrayList<Integer> al = new ArrayList<>();
-            while(rs.next()){
-                al.add(rs.getInt(1));
-            }
-
-            for(Integer i : al){
-                executeSQL.update("delete from class where sectionid = ?", i);
-                executeSQL.update("delete from enroll where sectionid = ?", i);
-            }
-
-            executeSQL.update("delete from section where semesterid = ?", semesterId);
-            executeSQL.update("delete from semester where id = ?", semesterId);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        executeSQL.update("delete from class where sectionid in (select id from section where semesterid = ?)", semesterId);
+        executeSQL.update("delete from enroll where sectionid in (select id from section where semesterid = ?)", semesterId);
+        executeSQL.update("delete from section where semesterid = ?", semesterId);
+        executeSQL.update("delete from semester where id = ?", semesterId);
     }
 
     @Override

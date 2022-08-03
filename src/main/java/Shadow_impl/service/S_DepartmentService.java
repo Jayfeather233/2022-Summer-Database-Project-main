@@ -18,34 +18,22 @@ import java.util.List;
 public class S_DepartmentService implements DepartmentService {
     @Override
     public int addDepartment(String name) {
-        try {
-            Connection conn = SQLDataSource.getInstance().getSQLConnection();
-            PreparedStatement ps = conn.prepareStatement("select name from department where name = ?");
-            ps.setString(1,name);
-            ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                throw new IntegrityViolationException();
-            } else {
-                ps.close();
-                rs.close();
-
-                executeSQL.update("insert into department(name) values(?)",name);
-                ps = conn.prepareStatement("select currval('department_seq')");
-                rs = ps.executeQuery();
-                rs.next();
-                int re = rs.getInt(1);
-                rs.close();
-                ps.close();
-                return re;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        if(executeSQL.ifExist("select name from department where name = ?",name)) throw new IntegrityViolationException();
+        executeSQL.update("insert into department(name) values(?)",name);
+        return executeSQL.getSeq("department_seq");
     }
 
     @Override
     public void removeDepartment(int departmentId) {
-        executeSQL.update("update department set show = false where id = ?", departmentId);
+        //department (id:deptid) major (id:majorid) coursemajor
+        // major (id:majorid) student
+        executeSQL.update("delete from coursemajor where majorid in (select id from major where deptid = ?)", departmentId);
+        executeSQL.update("delete from enroll where studentid in " +
+                                    "(select id from student where majorid in " +
+                                        "(select id from major where deptid = ?))", departmentId);
+        executeSQL.update("delete from student where majorid in (select id from major where deptid = ?))", departmentId);
+        executeSQL.update("delete from major where deptid = ?",departmentId);
+        executeSQL.update("delete from department where id = ?", departmentId);
     }
 
     @Override

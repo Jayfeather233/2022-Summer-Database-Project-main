@@ -6,10 +6,12 @@ import cn.edu.sustech.cs307.dto.grade.Grade;
 import cn.edu.sustech.cs307.service.StudentService;
 
 import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.sql.Date;
 import java.time.DayOfWeek;
 import java.util.List;
 
+@ParametersAreNonnullByDefault
 public class S_StudentService implements StudentService {
     @Override
     public void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate) {
