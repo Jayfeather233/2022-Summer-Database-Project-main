@@ -1,15 +1,9 @@
-
-create database database_project
-    WITH ENCODING='UTF8' LC_COLLATE = 'C'
-    template = template0;
-create user student superuser password '123456';
-
 create table userT
 (
-    id        int primary key,
-    type      varchar not null,
+    id         int primary key,
+    type       varchar not null,
     first_name text,
-    last_name text
+    last_name  text
 );
 
 create sequence department_seq;
@@ -142,23 +136,24 @@ create or replace function isPassedPrere(studentid int, courseid text) returns b
 as
 $$
 begin
-    if not(exists(select * from prerequisite where prerequisite.courseID = $2)) then
+    if not (exists(select * from prerequisite where prerequisite.courseID = $2)) then
         return true;
     else
-        return exists(select * from (select p.id as groupId, count(*) over (partition by p.id) as cnt, p.count
-                                     from course
-                                              join prerequisite p on course.id = p.courseID
-                                              join courseGroup cG on p.id = cG.groupID
-                                     where course.id = $2
-                                       and cG.courseid in
-                                           (select section.courseID
-                                            from section
-                                                     join (select e.sectionID
-                                                           from enroll e
-                                                           where e.studentID = $1
-                                                             and grade is not null
-                                                             and grade >= 60) ex
-                                                          on ex.sectionID = section.id)) qq
+        return exists(select *
+                      from (select p.id as groupId, count(*) over (partition by p.id) as cnt, p.count
+                            from course
+                                     join prerequisite p on course.id = p.courseID
+                                     join courseGroup cG on p.id = cG.groupID
+                            where course.id = $2
+                              and cG.courseid in
+                                  (select section.courseID
+                                   from section
+                                            join (select e.sectionID
+                                                  from enroll e
+                                                  where e.studentID = $1
+                                                    and grade is not null
+                                                    and grade >= 60) ex
+                                                 on ex.sectionID = section.id)) qq
                       where cnt = count);
     end if;
 end
@@ -169,7 +164,8 @@ create or replace function isConflict(stid int, scid int) returns boolean
 as
 $$
 begin
-    return exists(with targeted as (select semesterid        as semester,
+    return exists(with targeted as (select semesterid       as semester,
+                                           courseID         as course,
                                            dayOfWeek        as day,
                                            unnest(weeklist) as week,
                                            classStart       as st,
@@ -177,7 +173,8 @@ begin
                                     from class
                                              join section on class.sectionId = section.id
                                     where sectionID = $2),
-                       enrolled as (select semesterid      as semester,
+                       enrolled as (select semesterid       as semester,
+                                           courseID         as course,
                                            dayOfWeek        as day,
                                            unnest(weeklist) as week,
                                            classStart       as st,
@@ -188,11 +185,51 @@ begin
                                              join class
                                                   on t.sectionId = class.sectionID)
                   select
-                  from enrolled, targeted
+                  from enrolled,
+                       targeted
                   where enrolled.semester = targeted.semester
-                    and enrolled.day = targeted.day
-                    and enrolled.week = targeted.week
-                    and ((targeted.st between enrolled.st and enrolled.et)
-                      or (targeted.et between enrolled.st and enrolled.et)));
+                    and (
+                          (enrolled.day = targeted.day
+                              and enrolled.week = targeted.week
+                              and ((targeted.st between enrolled.st and enrolled.et)
+                                  or (targeted.et between enrolled.st and enrolled.et)))
+                          or (enrolled.course = targeted.course)
+                      ));
+end
+$$ language plpgsql;
+
+create or replace function isConflictCourse(scid1 int, scid2 int) returns boolean
+as
+$$
+begin
+    return exists(with targeted as (select semesterid       as semester,
+                                           courseID         as course,
+                                           dayOfWeek        as day,
+                                           unnest(weeklist) as week,
+                                           classStart       as st,
+                                           classEnd         as et
+                                    from class
+                                             join section on class.sectionId = section.id
+                                    where sectionID = $2),
+                       enrolled as (select semesterid       as semester,
+                                           courseID         as course,
+                                           dayOfWeek        as day,
+                                           unnest(weeklist) as week,
+                                           classStart       as st,
+                                           classEnd         as et
+                                    from class
+                                             join section on class.sectionId = section.id
+                                    where sectionID = $1)
+                  select
+                  from enrolled,
+                       targeted
+                  where enrolled.semester = targeted.semester
+                    and (
+                          (enrolled.day = targeted.day
+                              and enrolled.week = targeted.week
+                              and ((targeted.st between enrolled.st and enrolled.et)
+                                  or (targeted.et between enrolled.st and enrolled.et)))
+                          or (enrolled.course = targeted.course)
+                      ));
 end
 $$ language plpgsql;

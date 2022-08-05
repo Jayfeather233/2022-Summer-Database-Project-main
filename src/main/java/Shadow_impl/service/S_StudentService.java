@@ -64,7 +64,11 @@ public class S_StudentService implements StudentService {
                 "left join coursemajor cm on c.id = cm.courseid " +
                 "join class on s.id = class.sectionid " +
                 "join usert u on class.instructorid = u.id " +
-                "left join enroll e on e.studentid = ? " +
+                "left join " +
+                        "(select e.sectionid, cc.courseid, max(grade) over (partition by courseid) as grade " +
+                        "from enroll e " +
+                        "join section cc on e.sectionid = cc.id " +
+                        "where studentid = ? ) ent on ent.courseid = c.id " +
                 "where semesterid = ? ");
         if(searchCid != null) sql.append("and c.id like '%' || ? || '%' ");
         if(searchName != null) sql.append("and (c.name like '%' || ? || '%' " +
@@ -91,7 +95,7 @@ public class S_StudentService implements StudentService {
         }
 
         if(ignoreFull) sql.append("and s.leftcapacity <> 0 ");
-        if(ignorePassed) sql.append("and (e.grade is null or e.grade < 60) ");
+        if(ignorePassed) sql.append("and (ent.grade is null or ent.grade < 60) ");
 
         sql.insert(0,
                 "select c.id cid, c.name cname, c.credit, c.classHour, c.grading, " +
@@ -207,10 +211,28 @@ public class S_StudentService implements StudentService {
             }
             rs.close();
             ps.close();
-            conn.close();
             int from = pageIndex * pageSize;
             int to = Math.min(Lc.size(),(pageIndex + 1) * pageSize);
             from = Math.min(from,to);
+
+            ps = conn.prepareStatement(
+                    "select c.name, s.sectionname " +
+                            "from course c " +
+                            "join section s on c.id = s.courseid " +
+                            "join enroll e on s.id = e.sectionid " +
+                            "where e.studentid = ? and isconflictcourse(?, s.id) and semesterid = ? " +
+                            //"and (e.grade is null or e.grade >= 60) " +
+                            "order by name, sectionname");
+            for(int i=from;i<to;i++){
+                ps.setInt(1,studentId);
+                ps.setInt(2,Lc.get(i).section.id);
+                ps.setInt(3,semesterId);
+                rs = ps.executeQuery();
+                while(rs.next()) Lc.get(i).conflictCourseNames.add(String.format("%s[%s]",rs.getString(1),rs.getString(2)));
+                rs.close();
+            }
+            ps.close();
+            conn.close();
 
             return Lc.subList(from, to);
             //return Lc;
@@ -274,6 +296,8 @@ public class S_StudentService implements StudentService {
 
     @Override
     public void dropCourse(int studentId, int sectionId) throws IllegalStateException {
+
+        //if(studentId == 11719232) System.out.println("drop " + sectionId + '\n');
         if(executeSQL.ifExist("select grade from enroll where studentid = ? and sectionid = ? and grade is not null",studentId,sectionId)) throw new IllegalStateException();
         if(!executeSQL.ifExist("select id from section where id = ?",sectionId)) throw new IntegrityViolationException();
 
