@@ -92,6 +92,41 @@ public interface StudentService {
      */
     void addStudent(int userId, int majorId, String firstName, String lastName, Date enrolledDate);
 
+
+
+    /**
+     * 搜索指定学生在该学期的可用课程（'section'），并附加条件。
+     * 结果应首先按课程ID排序，然后按课程全名（course.name[section.name]）排序。
+     * 忽略所有没有子类的课程部分。
+     * 注意：所有ignore*参数都是关于结果是否应该忽略这种情况。
+     *即当ignoreFull为真时，结果应该过滤掉所有已满的部分。
+     *
+     * @param studentId
+     * @param semesterId
+     * @param searchCid 搜索课程ID。规则：searchCid在course.id中
+     * @param searchName 搜索课程名称。规则：searchName在 "course.name[section.name]"中。
+     * @param searchInstructor 搜索教员的名字。
+     *规则：firstName + lastName以searchInstructor开头。
+     *或者firstName + '' + lastName以searchInstructor开始
+     *或者firstName以searchInstructor开始
+     *或姓以搜索教师开始。
+     *param searchDayOfWeek 搜索一周的日子。匹配*任何*在搜索星期的部分的班级。
+     * @param searchClassTime 搜索上课时间。匹配本节中任何一个包含搜索班级时间的班级。
+     * @param searchClassLocations 搜索班级地点。匹配本节中的任何一个班级，包含搜索班级位置中的任何一个位置。
+     * @param searchCourseType 搜索课程类型。参见{@link cn.edu.sustech.cs307.service.StudentService.CourseType}。
+     * @param ignoreFull 是否要忽略完整的课程部分。
+     * @param ignoreConflict 是否忽略课程或时间冲突的课程部分。
+     * 请注意，一个部分既是课程也是时间与自己冲突的。
+     * 参见{@link cn.edu.sustech.cs307.dto.CourseSearchEntry#conflictCourseNames}。
+     * @param ignorePassed 是否要忽略学生通过的课程。
+     * @param ignoreMissingPrerequisites 是否忽略缺少先决条件的课程。
+     * @param pageSize 页面大小，实际上是 "limit pageSize"。
+     * 它是{@link cn.edu.sustech.cs307.dto.CourseSearchEntry}的数目。
+     * @param pageIndex 是页面索引，实际上是 "offset pageIndex * pageSize"。
+     *如果页面索引太大，以至于没有消息，则返回一个空列表。
+     *返回一个搜索条目的列表。参见 {@link cn.edu.sustech.cs307.dto.CourseSearchEntry}。
+     */
+
     /**
      * Search available courses (' sections) for the specified student in the semester with extra conditions.
      * The result should be first sorted by course ID, and then sorted by course full name (course.name[section.name]).
@@ -110,7 +145,8 @@ public interface StudentService {
      *                                   or lastName begins with searchInstructor.
      * @param searchDayOfWeek            search day of week. Matches *any* class in the section in the search day of week.
      * @param searchClassTime            search class time. Matches *any* class in the section contains the search class time.
-     * @param searchClassLocations       search class locations. Matches *any* class in the section contains *any* location from the search class locations.
+     * @param searchClassLocations       search class locations.
+     *                                   Matches *any* class in the section contains *any* location from the search class locations.
      * @param searchCourseType           search course type. See {@link cn.edu.sustech.cs307.service.StudentService.CourseType}
      * @param ignoreFull                 whether or not to ignore full course sections.
      * @param ignoreConflict             whether or not to ignore course or time conflicting course sections.

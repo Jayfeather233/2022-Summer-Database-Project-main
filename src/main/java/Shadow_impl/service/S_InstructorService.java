@@ -12,7 +12,7 @@ public class S_InstructorService implements InstructorService {
     public void addInstructor(int userId, String firstName, String lastName) {
         if(executeSQL.ifExist("select id from usert where id = ?", userId)) throw new IntegrityViolationException();
 
-        executeSQL.update("insert into usert(id,type,full_name) values (?,?,?)",
-                userId,'i', processName.getName(firstName,lastName));
+        executeSQL.update("insert into usert(id,type,first_name, last_name) values (?,?,?,?)",
+                userId,'i', firstName,lastName);
     }
 }
