@@ -164,37 +164,52 @@ create or replace function isConflict(stid int, scid int) returns boolean
 as
 $$
 begin
-    return exists(with targeted as (select semesterid       as semester,
-                                           courseID         as course,
-                                           dayOfWeek        as day,
-                                           unnest(weeklist) as week,
-                                           classStart       as st,
-                                           classEnd         as et
-                                    from class
-                                             join section on class.sectionId = section.id
-                                    where sectionID = $2),
+    if exists(with targeted as (select semesterid       as semester,
+                                       courseID         as course,
+                                       dayOfWeek        as day,
+                                       unnest(weeklist) as week,
+                                       classStart       as st,
+                                       classEnd         as et
+                                from class
+                                         join section on class.sectionId = section.id
+                                where sectionID = $2),
+                   enrolled as (select semesterid       as semester,
+                                       courseID         as course,
+                                       dayOfWeek        as day,
+                                       unnest(weeklist) as week,
+                                       classStart       as st,
+                                       classEnd         as et
+                                from (select sectionId, grade from enroll where studentId = $1) as t
+                                         join section
+                                              on t.sectionId = section.id
+                                         join class
+                                              on t.sectionId = class.sectionID)
+              select
+              from enrolled,
+                   targeted
+              where enrolled.semester = targeted.semester
+                and (
+                      (enrolled.day = targeted.day
+                          and enrolled.week = targeted.week
+                          and ((targeted.st between enrolled.st and enrolled.et)
+                              or (targeted.et between enrolled.st and enrolled.et)))
+                      or (enrolled.course = targeted.course)
+                  )) then return true;
+    elseif exists(with targeted as (select semesterid       as semester,
+                                           courseID         as course
+                                    from section
+                                    where id = $2),
                        enrolled as (select semesterid       as semester,
-                                           courseID         as course,
-                                           dayOfWeek        as day,
-                                           unnest(weeklist) as week,
-                                           classStart       as st,
-                                           classEnd         as et
+                                           courseID         as course
                                     from (select sectionId from enroll where studentId = $1) as t
                                              join section
-                                                  on t.sectionId = section.id
-                                             join class
-                                                  on t.sectionId = class.sectionID)
+                                                  on t.sectionId = section.id)
                   select
                   from enrolled,
                        targeted
-                  where enrolled.semester = targeted.semester
-                    and (
-                          (enrolled.day = targeted.day
-                              and enrolled.week = targeted.week
-                              and ((targeted.st between enrolled.st and enrolled.et)
-                                  or (targeted.et between enrolled.st and enrolled.et)))
-                          or (enrolled.course = targeted.course)
-                      ));
+                  where enrolled.course = targeted.course) then return true;
+    else return false;
+    end if;
 end
 $$ language plpgsql;
 
@@ -202,34 +217,49 @@ create or replace function isConflictCourse(scid1 int, scid2 int) returns boolea
 as
 $$
 begin
-    return exists(with targeted as (select semesterid       as semester,
-                                           courseID         as course,
-                                           dayOfWeek        as day,
-                                           unnest(weeklist) as week,
-                                           classStart       as st,
-                                           classEnd         as et
-                                    from class
-                                             join section on class.sectionId = section.id
-                                    where sectionID = $2),
+    if exists(with targeted as (select semesterid       as semester,
+                                       courseID         as course,
+                                       dayOfWeek        as day,
+                                       unnest(weeklist) as week,
+                                       classStart       as st,
+                                       classEnd         as et
+                                from class
+                                         join section on class.sectionId = section.id
+                                where sectionID = $2),
+                   enrolled as (select semesterid       as semester,
+                                       courseID         as course,
+                                       dayOfWeek        as day,
+                                       unnest(weeklist) as week,
+                                       classStart       as st,
+                                       classEnd         as et
+                                from class
+                                         join section on class.sectionId = section.id
+                                where sectionID = $1)
+              select
+              from enrolled,
+                   targeted
+              where enrolled.semester = targeted.semester
+                and (
+                      (enrolled.day = targeted.day
+                          and enrolled.week = targeted.week
+                          and ((targeted.st between enrolled.st and enrolled.et)
+                              or (targeted.et between enrolled.st and enrolled.et)))
+                      or (enrolled.course = targeted.course)
+                  )) then return true;
+    elseif exists(with targeted as (select semesterid       as semester,
+                                           courseID         as course
+                                    from section
+                                    where id = $2),
                        enrolled as (select semesterid       as semester,
-                                           courseID         as course,
-                                           dayOfWeek        as day,
-                                           unnest(weeklist) as week,
-                                           classStart       as st,
-                                           classEnd         as et
-                                    from class
-                                             join section on class.sectionId = section.id
-                                    where sectionID = $1)
+                                           courseID         as course
+                                    from section
+                                    where id = $1)
                   select
                   from enrolled,
                        targeted
-                  where enrolled.semester = targeted.semester
-                    and (
-                          (enrolled.day = targeted.day
-                              and enrolled.week = targeted.week
-                              and ((targeted.st between enrolled.st and enrolled.et)
-                                  or (targeted.et between enrolled.st and enrolled.et)))
-                          or (enrolled.course = targeted.course)
-                      ));
+                  where enrolled.course = targeted.course
+        ) then return true;
+    else return false;
+    end if;
 end
 $$ language plpgsql;
