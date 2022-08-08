@@ -18,9 +18,9 @@ import java.util.List;
 public class S_UserService implements UserService {
     @Override
     public void removeUser(int userId) {
+        executeSQL.update("delete from enroll where studentid = ?",userId);
         executeSQL.update("delete from student where id = ?",userId);
         executeSQL.update("delete from class where instructorid = ?",userId);
-        executeSQL.update("delete from enroll where studentid = ?",userId);
         executeSQL.update("delete from usert where id = ?",userId);
     }
 

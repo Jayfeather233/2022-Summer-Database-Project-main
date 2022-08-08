@@ -31,6 +31,19 @@ public class S_StudentService implements StudentService {
         executeSQL.update("insert into student(id, majorid, enrolleddate) values(?,?,?)",userId, majorId,enrolledDate);
     }
 
+    public static void main(String[] args) {
+        List<String> Ls = new ArrayList<>();
+        Ls.add("一教");
+        Ls.add("一科");
+        Ls.add("二教");
+        Ls.add("荔园");
+
+        System.out.println(new S_StudentService().searchCourse(11713156,19,
+                null,"班", null,null,null,
+                Ls,CourseType.ALL,
+                true,true,true,true,20,0));
+    }
+
     @Override
     public List<CourseSearchEntry> searchCourse(
             int studentId, int semesterId,
@@ -57,8 +70,8 @@ public class S_StudentService implements StudentService {
 
 
         StringBuilder sql = new StringBuilder(
-                "select distinct(s.id) as sidd, " +
-                        "isConflict(?, s.id) as is_conflict, isPassedPrere(?, c.id) as is_prere " +
+                "select s.id as sidd, " +
+                        "isConflict(?, s.id, ?) as is_conflict, isPassedPrere(?, c.id) as is_prere " +
                         "from section s " +
                 "join course c on s.courseid = c.id " +
                 "left join coursemajor cm on c.id = cm.courseid " +
@@ -111,11 +124,10 @@ public class S_StudentService implements StudentService {
                 "join class on s.id = class.sectionid " +
                 "join usert u on class.instructorid = u.id " +
                 "where true ");
-
         if(ignoreConflict) sql.append("and is_conflict = false ");
         if(ignoreMissingPrerequisites) sql.append("and is_prere = true ");
 
-        sql.append("order by c.id, c.name, s.sectionname, class.id");
+        sql.append("order by c.id, c.name, s.sectionname");
         //System.out.println(sql);
 
 
@@ -124,6 +136,7 @@ public class S_StudentService implements StudentService {
             PreparedStatement ps = conn.prepareStatement(sql.toString());
             int index = 0;
             ps.setInt(++index, studentId);
+            ps.setInt(++index, semesterId);
             ps.setInt(++index, studentId);
             ps.setInt(++index, studentId);
             ps.setInt(++index, semesterId);
@@ -216,19 +229,19 @@ public class S_StudentService implements StudentService {
             from = Math.min(from,to);
 
             ps = conn.prepareStatement(
-                    "select c.name, s.sectionname " +
+                    "select distinct(nnn) as n " +
+                            "from (select c.name || '[' || s.sectionname || ']' as nnn " +
                             "from course c " +
                             "join section s on c.id = s.courseid " +
                             "join enroll e on s.id = e.sectionid " +
-                            "where e.studentid = ? and isconflictcourse(?, s.id) and semesterid = ? " +
-                            //"and (e.grade is null or e.grade >= 60) " +
-                            "order by name, sectionname");
+                            "where (e.studentid = ? and isconflictcourse(?, s.id) and semesterid = ?) " +
+                            "order by name, sectionname) t");
             for(int i=from;i<to;i++){
                 ps.setInt(1,studentId);
                 ps.setInt(2,Lc.get(i).section.id);
                 ps.setInt(3,semesterId);
                 rs = ps.executeQuery();
-                while(rs.next()) Lc.get(i).conflictCourseNames.add(String.format("%s[%s]",rs.getString(1),rs.getString(2)));
+                while(rs.next()) Lc.get(i).conflictCourseNames.add(rs.getString(1));
                 rs.close();
             }
             ps.close();
@@ -247,12 +260,16 @@ public class S_StudentService implements StudentService {
     @Override
     public EnrollResult enrollCourse(int studentId, int sectionId) {
         if(!executeSQL.ifExist("select id from section where id = ?",sectionId)) return EnrollResult.COURSE_NOT_FOUND;
-        if(executeSQL.ifExist("select studentid from enroll where studentid = ? and sectionid = ? and grade is null",studentId,sectionId)) return EnrollResult.ALREADY_ENROLLED;
+        if(executeSQL.ifExist("select studentid from enroll where studentid = ? and " +
+                "sectionid in (select s.id from section s join " +
+                    "(select c.id from course c join section s on c.id = s.courseid where s.id = ?) t on t.id = s.courseid) and grade is null",studentId,sectionId)) return EnrollResult.ALREADY_ENROLLED;
         int maxScore = 0;
         String courseId = null;
         try {
             Connection conn = SQLDataSource.getInstance().getSQLConnection();
-            PreparedStatement ps = conn.prepareStatement("select max(grade) from enroll where studentid = ? and sectionid = ?");
+            PreparedStatement ps = conn.prepareStatement("select coalesce(max(grade),0) from enroll where studentid = ? and " +
+                    "sectionid in (select s.id from section s join " +
+                        "(select c.id from course c join section s on c.id = s.courseid where s.id = ?) t on t.id = s.courseid)");
             ps.setInt(1,studentId);
             ps.setInt(2,sectionId);
             ResultSet rs = ps.executeQuery();
@@ -307,7 +324,7 @@ public class S_StudentService implements StudentService {
 
     @Override
     public void addEnrolledCourseWithGrade(int studentId, int sectionId, @Nullable Grade grade) {
-        if(executeSQL.ifExist("select studentid from enroll where studentid = ? and sectionid = ?",studentId,sectionId)) throw new IntegrityViolationException();
+        executeSQL.update("delete from enroll where studentid = ? and sectionid = ?",studentId,sectionId);
 
         if(grade == null){
             executeSQL.update("insert into enroll(studentid, sectionid) values(?,?)",studentId,sectionId);
@@ -315,19 +332,21 @@ public class S_StudentService implements StudentService {
             short u = grade.when(new Grade.Cases<>() {
                 @Override
                 public Short match(PassOrFailGrade self) {
-                    if(!executeSQL.ifExist("select c.id from course c join section s on c.id = s.courseid " +
-                            "where s.id = ? and c.grading = false",sectionId)) throw new IntegrityViolationException();
+                    if (!executeSQL.ifExist("select c.id from course c join section s on c.id = s.courseid " +
+                            "where s.id = ? and c.grading = false", sectionId))
+                        throw new IntegrityViolationException();
                     return (short) (self == PassOrFailGrade.PASS ? 60 : 0);
                 }
 
                 @Override
                 public Short match(HundredMarkGrade self) {
-                    if(!executeSQL.ifExist("select c.id from course c join section s on c.id = s.courseid " +
-                            "where s.id = ? and c.grading = true",sectionId)) throw new IntegrityViolationException();
+                    if (!executeSQL.ifExist("select c.id from course c join section s on c.id = s.courseid " +
+                            "where s.id = ? and c.grading = true", sectionId))
+                        throw new IntegrityViolationException();
                     return self.mark;
                 }
             });
-            executeSQL.update("insert into enroll(studentid, sectionid, grade) values(?,?,?)",studentId,sectionId,u);
+            executeSQL.update("insert into enroll(studentid, sectionid, grade) values(?,?,?)", studentId, sectionId, u);
         }
     }
 
@@ -347,7 +366,7 @@ public class S_StudentService implements StudentService {
                                 join enroll e on (section.id = e.sectionID and e.studentID = ?)
                                 join course c on section.courseID = c.id
                                 join usert u on u.id = class.instructorid
-                            where getWeekNumber(begint, ?) = any(weekList);""");
+                            where getWeekNumber(begint, ?) = any(weekList)""");
             ps.setDate(1,date);
             ps.setInt(2,studentId);
             ps.setDate(3,date);
