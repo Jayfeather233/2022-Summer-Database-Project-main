@@ -27,12 +27,13 @@ public class check {
             throw new RuntimeException(e);
         }
     }
-    public static boolean checkConf(int studentId, int sectionId){
+    public static boolean checkConf(int studentId, int sectionId, int semesterId){
         try {
             Connection conn = SQLDataSource.getInstance().getSQLConnection();
-            PreparedStatement ps = conn.prepareStatement("select isconflict(?,?)");
+            PreparedStatement ps = conn.prepareStatement("select isconflict(?,?,?)");
             ps.setInt(1,studentId);
             ps.setInt(2,sectionId);
+            ps.setInt(3,semesterId);
             ResultSet rs = ps.executeQuery();
             boolean flg = false;
             if(rs.next()){

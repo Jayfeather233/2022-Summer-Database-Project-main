@@ -235,7 +235,7 @@ public class S_StudentService implements StudentService {
                             "join section s on c.id = s.courseid " +
                             "join enroll e on s.id = e.sectionid " +
                             "where (e.studentid = ? and isconflictcourse(?, s.id) and semesterid = ?) " +
-                            "order by name, sectionname) t");
+                            ") t");
             for(int i=from;i<to;i++){
                 ps.setInt(1,studentId);
                 ps.setInt(2,Lc.get(i).section.id);
@@ -264,6 +264,7 @@ public class S_StudentService implements StudentService {
                 "sectionid in (select s.id from section s join " +
                     "(select c.id from course c join section s on c.id = s.courseid where s.id = ?) t on t.id = s.courseid) and grade is null",studentId,sectionId)) return EnrollResult.ALREADY_ENROLLED;
         int maxScore = 0;
+        int semesterId = 0;
         String courseId = null;
         try {
             Connection conn = SQLDataSource.getInstance().getSQLConnection();
@@ -287,6 +288,15 @@ public class S_StudentService implements StudentService {
             }
             ps.close();
             rs.close();
+
+            ps = conn.prepareStatement("select semesterId from section where id = ?");
+            ps.setInt(1,sectionId);
+            rs = ps.executeQuery();
+            if(rs.next()){
+                semesterId =rs.getInt(1);
+            }
+            ps.close();
+            rs.close();
             conn.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -301,7 +311,7 @@ public class S_StudentService implements StudentService {
                     join (select sectionID from enroll where studentID = ?) ss on ss.sectionID = s.id
                 where courseID = ?""", studentId, courseId)) return EnrollResult.COURSE_CONFLICT_FOUND;
 
-        if(check.checkConf(studentId,sectionId)) return EnrollResult.COURSE_CONFLICT_FOUND;
+        if(check.checkConf(studentId,sectionId,semesterId)) return EnrollResult.COURSE_CONFLICT_FOUND;
 
         if(!executeSQL.ifExist("select id from section where id = ? and leftcapacity >= 1",sectionId)) return EnrollResult.COURSE_IS_FULL;
 
